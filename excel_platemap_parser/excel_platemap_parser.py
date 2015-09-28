@@ -41,6 +41,10 @@ parser.add_argument('-o', '--out', dest='output', required=True,
 					help="The output directory, into which the map files will be deposited. \
 					If the directory does not exist, it will be created. \
 					Required.")
+parser.add_argument('-e', '--experiment', dest='experiment', default=None,
+					help="Name of the experiment. \
+					If not supplied, the input filename (after removing the .xlsx extension) \
+					will be used.")
 parser.add_argument('--plate-prefix', default='plate',
 					help="Prefix for plate filenames, if names aren't to be parsed from the platemap file. \
 					Default is 'plate'.")
@@ -78,6 +82,13 @@ parser.add_argument('--max-sample-number', default=4, type=int,
 					help="Maximum number of samples in a single plate. Default is 4. \
 					Increase if there are more than four samples for any well in the platemap.")
 args = parser.parse_args()
+
+
+def get_experiment():
+	if args.experiment:
+		return args.experiment
+	exp = os.path.basename(args.input).rstrip('.xlsx').rstrip('.xls')
+	return exp
 
 
 def get_plate_blocks(ws):
@@ -185,7 +196,7 @@ def parse_plate_grid(raw_plate):
 
 
 
-def write_output(plates):
+def write_output(plates, experiment):
 	for i, plate in enumerate(plates):
 		# num = str(i + args.plate_numbering_start)
 		# if len(num) < 2:
@@ -194,18 +205,21 @@ def write_output(plates):
 		ohandle = open(os.path.join(args.output, plate.name), 'w')
 		output = []
 		for well in plate.wells:
-			output.append('{}\t{}\t{}'.format(well.well, well.sample, well.value))
+			output.append('{}\t{}\t{}\t{}'.format(
+				well.well, well.sample, well.value, experiment))
 		ohandle.write('\n'.join(output))
 
 
 def main():
+	experiment = get_experiment()
 	wb = load_workbook(args.input)
 	ws = wb[wb.get_sheet_names()[0]]
 	plate_blocks = get_plate_blocks(ws)
 	plural = '' if len(plate_blocks) <= 2 else 's'
-	print('\nFound {} plate{} in the input file\n'.format(len(plate_blocks) - 1, plural))
+	print('\nFound {} plate{} in the input file'.format(len(plate_blocks) - 1, plural))
+	print('Experiment name: {}\n'.format(experiment))
 	plates = parse_plates(plate_blocks[1:])
-	write_output(plates)
+	write_output(plates, experiment)
 	print()
 
 

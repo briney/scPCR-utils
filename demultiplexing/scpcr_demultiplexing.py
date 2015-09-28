@@ -43,7 +43,7 @@ import numpy as np
 import pandas as pd
 
 
-parser = argparse.ArgumentParser("")
+parser = argparse.ArgumentParser()
 parser.add_argument('-o', '--output', dest='output', required=True,
 					help="Output directory for demultiplexed FASTA files. Required.")
 parser.add_argument('-t', '--temp', dest='temp_dir', required=True,
@@ -101,7 +101,7 @@ parser.add_argument('--minimum-cluster-fraction', default=0.5, type=float,
 					help="Minimum fraction for a CD-HIT cluster (relative to the total \
 					number of sequences in a given well) for a centroid to be determined. \
 					For example, if set to 0.7, the largest CD-HIT cluster for a well must comprise \
-					70% of all sequences in that well. \
+					70 percent of all sequences in that well. \
 					Default is 0.5.")
 parser.add_argument('--debug', dest='debug', action='store_true', default=False,
 					help="If set, will run in debug mode.")
@@ -143,7 +143,7 @@ def get_sequences(collection, chain):
 
 def build_seq_db(seqs):
 	sys.stdout.flush()
-	db_path = os.path.join('./temp', 'seq_db')
+	db_path = os.path.join(args.temp_dir, 'seq_db')
 	conn = sqlite3.connect(db_path)
 	c = conn.cursor()
 	create_cmd = get_seq_db_creation_cmd()
@@ -166,7 +166,7 @@ def get_seq_db_insert_cmd():
 
 
 def remove_sqlite_db():
-	db_path = os.path.join('./temp', 'seq_db')
+	db_path = os.path.join(args.temp_dir, 'seq_db')
 	os.unlink(db_path)
 
 
@@ -180,7 +180,7 @@ def cdhit_clustering(seqs, bin_id):
 	print('clustering...')
 	legit = False
 	seq_db = build_seq_db(seqs)
-	temp_dir = './temp'
+	temp_dir = args.temp_dir
 	infile = make_cdhit_input(seqs)
 	outfile = os.path.join(temp_dir, 'clust')
 	logfile = open(os.path.join(temp_dir, 'log'), 'a')
@@ -189,7 +189,7 @@ def cdhit_clustering(seqs, bin_id):
 	clust_handle = open('{}.clstr'.format(outfile), 'r')
 	seq, size, total_count = parse_clusters(clust_handle, seq_db)
 	os.unlink(infile.name)
-	os.unlink(os.path.join('./temp', 'log'))
+	os.unlink(os.path.join(args.temp_dir, 'log'))
 	os.unlink(outfile)
 	os.unlink(outfile + '.clstr')
 	remove_sqlite_db()
@@ -208,7 +208,7 @@ def cdhit_clustering(seqs, bin_id):
 
 def make_cdhit_input(seqs):
 	fastas = ['>{}\n{}'.format(s[0], s[1]) for s in seqs]
-	infile = tempfile.NamedTemporaryFile(dir='./temp', delete=False)
+	infile = tempfile.NamedTemporaryFile(dir=args.temp_dir, delete=False)
 	infile.write('\n'.join(fastas))
 	infile.close()
 	return infile
